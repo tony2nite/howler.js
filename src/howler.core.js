@@ -531,11 +531,11 @@
           node.muted = sound._muted || self._muted || Howler._muted || node.muted;
           node.volume = sound._volume * Howler.volume();
           node.playbackRate = self._rate;
+          if (!args[1]) {
+            node.addEventListener('play', self._playFn, false);
+          }
           setTimeout(function() {
             node.play();
-            if (!args[1]) {
-              self._emit('play', sound._id);
-            }
           }, 0);
         };
 
@@ -1051,6 +1051,7 @@
           // Remove any event listeners.
           sounds[i]._node.removeEventListener('error', sounds[i]._errorFn, false);
           sounds[i]._node.removeEventListener('canplaythrough', sounds[i]._loadFn, false);
+          sounds[i]._node.removeEventListener('play', self._playFn, false);
         }
 
         // Empty out all of the nodes.
@@ -1382,6 +1383,9 @@
         self._loadFn = self._loadListener.bind(self);
         self._node.addEventListener('canplaythrough', self._loadFn, false);
 
+        // Listen for 'play' event to let us know the sound is ready.
+        self._playFn = self._html5PlayingListener.bind(self);
+
         // Setup the new audio node.
         self._node.src = parent._src;
         self._node.preload = 'auto';
@@ -1433,6 +1437,11 @@
       
       // Clear the event listener.
       self._node.removeEventListener('error', self._errorListener, false);
+    },
+
+    _html5PlayingListener: function() {
+      var self = this;
+      self._parent._emit('play', self._id);
     },
 
     /**
